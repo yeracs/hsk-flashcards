@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HSK Flashcards (HSK1 + HSK2)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      margin: 1rem 0 0.25rem;
+      text-align: center;
+    }
+
+    .sub {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 0.75rem;
+      text-align: center;
+      padding: 0 1rem;
+    }
+
+    .card {
+      margin-top: 0.75rem;
+      width: min(520px, 92vw);
+      height: 380px;
+      background: #ffffff;
+      border-radius: 22px;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.10);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.4rem;
+      box-sizing: border-box;
+      user-select: none;
+      cursor: pointer;
+      text-align: center;
+      gap: 0.8rem;
+    }
+
+    .front {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
+      width: 100%;
+    }
+
+    .hanzi {
+      font-size: 4.2rem;
+      line-height: 1.05;
+      white-space: pre-line;
+    }
+
+    .pinyin {
+      font-size: 1.9rem; /* ← change pinyin size here */
+      color: #666;
+      line-height: 1.2;
+    }
+
+    .back {
+      display: none;
+      width: 100%;
+      max-width: 460px;
+      font-size: 1.6rem;
+      color: #333;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .metaRow {
+      margin-top: 0.8rem;
+      width: min(520px, 92vw);
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      color: #777;
+      font-size: 0.95rem;
+    }
+
+    .controls, .grade {
+      margin-top: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      justify-content: center;
+      width: min(640px, 92vw);
+    }
+
+    button, select {
+      border-radius: 999px;
+      border: none;
+      padding: 0.62rem 1.05rem;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #222;
+      color: #fff;
+    }
+
+    button.secondary {
+      background: #e0e0e0;
+      color: #222;
+    }
+
+    button.good { background: #1b5e20; }
+    button.bad  { background: #b71c1c; }
+
+    select {
+      background: #ffffff;
+      color: #222;
+      border: 1px solid #ddd;
+      padding-right: 1.2rem;
+    }
+
+    .tiny {
+      font-size: 0.88rem;
+      color: #666;
+      margin: 0.5rem 0 1.2rem;
+      text-align: center;
+      padding: 0 1rem;
+      width: min(720px, 92vw);
+    }
+  </style>
+</head>
+
+<body>
+  <h1 id="title">HSK Flashcards</h1>
+  <div class="sub">
+    Tap card to show / hide meaning · Mark Right/Wrong to build review piles · Toggle pinyin on the front
+  </div>
+
+  <div class="card" id="card">
+    <div class="front">
+      <div class="hanzi" id="hanzi"></div>
+      <div class="pinyin" id="pinyin" style="display:none;"></div>
+    </div>
+    <div class="back" id="back"></div>
+  </div>
+
+  <div class="metaRow">
+    <div id="index"></div>
+    <div id="stats"></div>
+  </div>
+
+  <div class="grade">
+    <button id="wrongBtn" class="bad">Wrong</button>
+    <button id="rightBtn" class="good">Right</button>
+  </div>
+
+  <div class="controls">
+    <button id="prevBtn" class="secondary">Previous</button>
+    <button id="flipBtn">Show / Hide Meaning</button>
+    <button id="nextBtn" class="secondary">Next</button>
+    <button id="shuffleBtn" class="secondary">Shuffle</button>
+
+    <button id="pinyinToggleBtn" class="secondary">Show Pinyin</button>
+
+    <select id="deckSelect">
+      <option value="hsk1">Deck: HSK1</option>
+      <option value="hsk2">Deck: HSK2</option>
+    </select>
+
+    <select id="modeSelect">
+      <option value="all">Study: All</option>
+      <option value="incorrect">Study: Wrong pile</option>
+      <option value="correct">Study: Right pile</option>
+    </select>
+
+    <button id="resetBtn" class="secondary">Start Over (This Deck)</button>
+  </div>
+
+  <div class="tiny">
+    Shortcuts: ← / → navigate · Space flip · R = Right · W = Wrong · P = Toggle Pinyin
+  </div>
+
+<script>
+/* ================= DATA ================= */
+const DECKS = {
+  hsk1: { label: "HSK1", cards: [
+  {
+    "hanzi": "爱",
+    "pinyin": "ài",
+    "eng": "love; like"
+  },
+  {
+    "hanzi": "八",
+    "pinyin": "bā",
+    "eng": "eight"
+  },
+  {
+    "hanzi": "爸爸",
+    "pinyin": "bàba",
+    "eng": "dad; father"
+  },
+  {
+    "hanzi": "杯子",
+    "pinyin": "bēizi",
+    "eng": "cup; glass"
+  },
+  {
+    "hanzi": "北京",
+    "pinyin": "Běijīng",
+    "eng": "Beijing"
+  },
+  {
+    "hanzi": "本",
+    "pinyin": "běn",
+    "eng": "measure word for books"
+  },
+  {
+    "hanzi": "不客气",
+    "pinyin": "bú kèqi",
+    "eng": "you’re welcome"
+  },
+  {
+    "hanzi": "不",
+    "pinyin": "bù",
+    "eng": "not; no"
+  },
+  {
+    "hanzi": "菜",
+    "pinyin": "cài",
+    "eng": "dish; vegetable"
+  },
+  {
+    "hanzi": "茶",
+    "pinyin": "chá",
+    "eng": "tea"
+  },
+  {
+    "hanzi": "吃",
+    "pinyin": "chī",
+    "eng": "eat"
+  },
+  {
+    "hanzi": "出租车",
+    "pinyin": "chūzūchē",
+    "eng": "taxi"
+  },
+  {
+    "hanzi": "打电话",
+    "pinyin": "dǎ diànhuà",
+    "eng": "make a phone call"
+  },
+  {
+    "hanzi": "大",
+    "pinyin": "dà",
+    "eng": "big"
+  },
+  {
+    "hanzi": "的",
+    "pinyin": "de",
+    "eng": "’s (possessive); structural particle"
+  },
+  {
+    "hanzi": "点",
+    "pinyin": "diǎn",
+    "eng": "o’clock; dot; point"
+  },
+  {
+    "hanzi": "电脑",
+    "pinyin": "diànnǎo",
+    "eng": "computer"
+  },
+  {
+    "hanzi": "电视",
+    "pinyin": "diànshì",
+    "eng": "television"
+  },
+  {
+    "hanzi": "电影",
+    "pinyin": "diànyǐng",
+    "eng": "movie"
+  },
+  {
+    "hanzi": "东西",
+    "pinyin": "dōngxi",
+    "eng": "thing; object"
+  },
+  {
+    "hanzi": "都",
+    "pinyin": "dōu",
+    "eng": "all; both"
+  },
+  {
+    "hanzi": "读",
+    "pinyin": "dú",
+    "eng": "read"
+  },
+  {
+    "hanzi": "对不起",
+    "pinyin": "duìbuqǐ",
+    "eng": "I’m sorry"
+  },
+  {
+    "hanzi": "多",
+    "pinyin": "duō",
+    "eng": "many; much; how (in questions)"
+  },
+  {
+    "hanzi": "多少",
+    "pinyin": "duōshao",
+    "eng": "how many; how much"
+  },
+  {
+    "hanzi": "儿子",
+    "pinyin": "érzi",
+    "eng": "son"
+  },
+  {
+    "hanzi": "二",
+    "pinyin": "èr",
+    "eng": "two"
+  },
+  {
+    "hanzi": "饭店",
+    "pinyin": "fàndiàn",
+    "eng": "restaurant; hotel"
+  },
+  {
+    "hanzi": "飞机",
+    "pinyin": "fēijī",
+    "eng": "airplane"
+  },
+  {
+    "hanzi": "分钟",
+    "pinyin": "fēnzhōng",
+    "eng": "minute"
+  },
+  {
+    "hanzi": "高兴",
+    "pinyin": "gāoxìng",
+    "eng": "happy"
+  },
+  {
+    "hanzi": "个",
+    "pinyin": "gè",
+    "eng": "general measure word"
+  },
+  {
+    "hanzi": "工作",
+    "pinyin": "gōngzuò",
+    "eng": "work; job"
+  },
+  {
+    "hanzi": "汉语",
+    "pinyin": "Hànyǔ",
+    "eng": "Chinese language"
+  },
+  {
+    "hanzi": "好",
+    "pinyin": "hǎo",
+    "eng": "good; fine"
+  },
+  {
+    "hanzi": "号",
+    "pinyin": "hào",
+    "eng": "date; number"
+  },
+  {
+    "hanzi": "喝",
+    "pinyin": "hē",
+    "eng": "drink"
+  },
+  {
+    "hanzi": "和",
+    "pinyin": "hé",
+    "eng": "and; with"
+  },
+  {
+    "hanzi": "很",
+    "pinyin": "hěn",
+    "eng": "very"
+  },
+  {
+    "hanzi": "后面",
+    "pinyin": "hòumiàn",
+    "eng": "back; behind"
+  },
+  {
+    "hanzi": "回",
+    "pinyin": "huí",
+    "eng": "return; go back"
+  },
+  {
+    "hanzi": "会",
+    "pinyin": "huì",
+    "eng": "can; know how to"
+  },
+  {
+    "hanzi": "几",
+    "pinyin": "jǐ",
+    "eng": "how many; several"
+  },
+  {
+    "hanzi": "家",
+    "pinyin": "jiā",
+    "eng": "home; family"
+  },
+  {
+    "hanzi": "叫",
+    "pinyin": "jiào",
+    "eng": "to be called; to call"
+  },
+  {
+    "hanzi": "今天",
+    "pinyin": "jīntiān",
+    "eng": "today"
+  },
+  {
+    "hanzi": "九",
+    "pinyin": "jiǔ",
+    "eng": "nine"
+  },
+  {
+    "hanzi": "开",
+    "pinyin": "kāi",
+    "eng": "open; drive; start"
+  },
+  {
+    "hanzi": "看",
+    "pinyin": "kàn",
+    "eng": "look; watch; read"
+  },
+  {
+    "hanzi": "看见",
+    "pinyin": "kànjiàn",
+    "eng": "see"
+  },
+  {
+    "hanzi": "块",
+    "pinyin": "kuài",
+    "eng": "piece; RMB yuan (spoken)"
+  },
+  {
+    "hanzi": "来",
+    "pinyin": "lái",
+    "eng": "come"
+  },
+  {
+    "hanzi": "老师",
+    "pinyin": "lǎoshī",
+    "eng": "teacher"
+  },
+  {
+    "hanzi": "了",
+    "pinyin": "le",
+    "eng": "(aspect particle)"
+  },
+  {
+    "hanzi": "冷",
+    "pinyin": "lěng",
+    "eng": "cold"
+  },
+  {
+    "hanzi": "里",
+    "pinyin": "lǐ",
+    "eng": "in; inside"
+  },
+  {
+    "hanzi": "零",
+    "pinyin": "líng",
+    "eng": "zero"
+  },
+  {
+    "hanzi": "六",
+    "pinyin": "liù",
+    "eng": "six"
+  },
+  {
+    "hanzi": "妈妈",
+    "pinyin": "māma",
+    "eng": "mom; mother"
+  },
+  {
+    "hanzi": "吗",
+    "pinyin": "ma",
+    "eng": "(question particle)"
+  },
+  {
+    "hanzi": "买",
+    "pinyin": "mǎi",
+    "eng": "buy"
+  },
+  {
+    "hanzi": "没关系",
+    "pinyin": "méi guānxi",
+    "eng": "it’s OK; never mind"
+  },
+  {
+    "hanzi": "没有",
+    "pinyin": "méiyǒu",
+    "eng": "not have; there is not"
+  },
+  {
+    "hanzi": "米饭",
+    "pinyin": "mǐfàn",
+    "eng": "cooked rice"
+  },
+  {
+    "hanzi": "明天",
+    "pinyin": "míngtiān",
+    "eng": "tomorrow"
+  },
+  {
+    "hanzi": "名字",
+    "pinyin": "míngzi",
+    "eng": "name"
+  },
+  {
+    "hanzi": "哪",
+    "pinyin": "nǎ",
+    "eng": "which"
+  },
+  {
+    "hanzi": "哪儿",
+    "pinyin": "nǎr",
+    "eng": "where"
+  },
+  {
+    "hanzi": "那",
+    "pinyin": "nà",
+    "eng": "that"
+  },
+  {
+    "hanzi": "那儿",
+    "pinyin": "nàr",
+    "eng": "there"
+  },
+  {
+    "hanzi": "呢",
+    "pinyin": "ne",
+    "eng": "(particle in questions / emphasis)"
+  },
+  {
+    "hanzi": "能",
+    "pinyin": "néng",
+    "eng": "can; be able to"
+  },
+  {
+    "hanzi": "你",
+    "pinyin": "nǐ",
+    "eng": "you"
+  },
+  {
+    "hanzi": "年",
+    "pinyin": "nián",
+    "eng": "year"
+  },
+  {
+    "hanzi": "女儿",
+    "pinyin": "nǚ’ér",
+    "eng": "daughter"
+  },
+  {
+    "hanzi": "朋友",
+    "pinyin": "péngyou",
+    "eng": "friend"
+  },
+  {
+    "hanzi": "漂亮",
+    "pinyin": "piàoliang",
+    "eng": "beautiful; pretty"
+  },
+  {
+    "hanzi": "苹果",
+    "pinyin": "píngguǒ",
+    "eng": "apple"
+  },
+  {
+    "hanzi": "七",
+    "pinyin": "qī",
+    "eng": "seven"
+  },
+  {
+    "hanzi": "钱",
+    "pinyin": "qián",
+    "eng": "money"
+  },
+  {
+    "hanzi": "前面",
+    "pinyin": "qiánmiàn",
+    "eng": "front; ahead"
+  },
+  {
+    "hanzi": "请",
+    "pinyin": "qǐng",
+    "eng": "please; invite"
+  },
+  {
+    "hanzi": "去",
+    "pinyin": "qù",
+    "eng": "go"
+  },
+  {
+    "hanzi": "热",
+    "pinyin": "rè",
+    "eng": "hot"
+  },
+  {
+    "hanzi": "人",
+    "pinyin": "rén",
+    "eng": "person; people"
+  },
+  {
+    "hanzi": "认识",
+    "pinyin": "rènshi",
+    "eng": "know (someone); be acquainted with"
+  },
+  {
+    "hanzi": "三",
+    "pinyin": "sān",
+    "eng": "three"
+  },
+  {
+    "hanzi": "商店",
+    "pinyin": "shāngdiàn",
+    "eng": "shop; store"
+  },
+  {
+    "hanzi": "上",
+    "pinyin": "shàng",
+    "eng": "up; on; above"
+  },
+  {
+    "hanzi": "上午",
+    "pinyin": "shàngwǔ",
+    "eng": "morning"
+  },
+  {
+    "hanzi": "少",
+    "pinyin": "shǎo",
+    "eng": "few; little; not much"
+  },
+  {
+    "hanzi": "谁",
+    "pinyin": "shéi / shuí",
+    "eng": "who"
+  },
+  {
+    "hanzi": "什么",
+    "pinyin": "shénme",
+    "eng": "what"
+  },
+  {
+    "hanzi": "十",
+    "pinyin": "shí",
+    "eng": "ten"
+  },
+  {
+    "hanzi": "时候",
+    "pinyin": "shíhou",
+    "eng": "time; moment"
+  },
+  {
+    "hanzi": "是",
+    "pinyin": "shì",
+    "eng": "to be; yes"
+  },
+  {
+    "hanzi": "书",
+    "pinyin": "shū",
+    "eng": "book"
+  },
+  {
+    "hanzi": "水",
+    "pinyin": "shuǐ",
+    "eng": "water"
+  },
+  {
+    "hanzi": "水果",
+    "pinyin": "shuǐguǒ",
+    "eng": "fruit"
+  },
+  {
+    "hanzi": "睡觉",
+    "pinyin": "shuìjiào",
+    "eng": "sleep"
+  },
+  {
+    "hanzi": "说",
+    "pinyin": "shuō",
+    "eng": "speak; say"
+  },
+  {
+    "hanzi": "说话",
+    "pinyin": "shuōhuà",
+    "eng": "talk; speak"
+  },
+  {
+    "hanzi": "四",
+    "pinyin": "sì",
+    "eng": "four"
+  },
+  {
+    "hanzi": "岁",
+    "pinyin": "suì",
+    "eng": "year (of age)"
+  },
+  {
+    "hanzi": "他",
+    "pinyin": "tā",
+    "eng": "he; him"
+  },
+  {
+    "hanzi": "她",
+    "pinyin": "tā",
+    "eng": "she; her"
+  },
+  {
+    "hanzi": "太",
+    "pinyin": "tài",
+    "eng": "too; extremely"
+  },
+  {
+    "hanzi": "天气",
+    "pinyin": "tiānqì",
+    "eng": "weather"
+  },
+  {
+    "hanzi": "听",
+    "pinyin": "tīng",
+    "eng": "listen; hear"
+  },
+  {
+    "hanzi": "同学",
+    "pinyin": "tóngxué",
+    "eng": "classmate; schoolmate"
+  },
+  {
+    "hanzi": "喂",
+    "pinyin": "wèi",
+    "eng": "hello (on the phone)"
+  },
+  {
+    "hanzi": "我",
+    "pinyin": "wǒ",
+    "eng": "I; me"
+  },
+  {
+    "hanzi": "我们",
+    "pinyin": "wǒmen",
+    "eng": "we; us"
+  },
+  {
+    "hanzi": "五",
+    "pinyin": "wǔ",
+    "eng": "five"
+  },
+  {
+    "hanzi": "喜欢",
+    "pinyin": "xǐhuan",
+    "eng": "like"
+  },
+  {
+    "hanzi": "下",
+    "pinyin": "xià",
+    "eng": "down; next"
+  },
+  {
+    "hanzi": "下午",
+    "pinyin": "xiàwǔ",
+    "eng": "afternoon"
+  },
+  {
+    "hanzi": "下雨",
+    "pinyin": "xià yǔ",
+    "eng": "to rain"
+  },
+  {
+    "hanzi": "先生",
+    "pinyin": "xiānsheng",
+    "eng": "Mr.; sir"
+  },
+  {
+    "hanzi": "现在",
+    "pinyin": "xiànzài",
+    "eng": "now"
+  },
+  {
+    "hanzi": "想",
+    "pinyin": "xiǎng",
+    "eng": "want; think"
+  },
+  {
+    "hanzi": "小",
+    "pinyin": "xiǎo",
+    "eng": "small; little"
+  },
+  {
+    "hanzi": "小姐",
+    "pinyin": "xiǎojiě",
+    "eng": "Miss"
+  },
+  {
+    "hanzi": "些",
+    "pinyin": "xiē",
+    "eng": "some; a few"
+  },
+  {
+    "hanzi": "写",
+    "pinyin": "xiě",
+    "eng": "write"
+  },
+  {
+    "hanzi": "谢谢",
+    "pinyin": "xièxie",
+    "eng": "thanks"
+  },
+  {
+    "hanzi": "星期",
+    "pinyin": "xīngqī",
+    "eng": "week"
+  },
+  {
+    "hanzi": "学生",
+    "pinyin": "xuésheng",
+    "eng": "student"
+  },
+  {
+    "hanzi": "学习",
+    "pinyin": "xuéxí",
+    "eng": "study; learn"
+  },
+  {
+    "hanzi": "学校",
+    "pinyin": "xuéxiào",
+    "eng": "school"
+  },
+  {
+    "hanzi": "一",
+    "pinyin": "yī",
+    "eng": "one"
+  },
+  {
+    "hanzi": "一点儿",
+    "pinyin": "yìdiǎnr",
+    "eng": "a little"
+  },
+  {
+    "hanzi": "衣服",
+    "pinyin": "yīfu",
+    "eng": "clothes"
+  },
+  {
+    "hanzi": "医生",
+    "pinyin": "yīshēng",
+    "eng": "doctor"
+  },
+  {
+    "hanzi": "医院",
+    "pinyin": "yīyuàn",
+    "eng": "hospital"
+  },
+  {
+    "hanzi": "椅子",
+    "pinyin": "yǐzi",
+    "eng": "chair"
+  },
+  {
+    "hanzi": "有",
+    "pinyin": "yǒu",
+    "eng": "have; there is/are"
+  },
+  {
+    "hanzi": "月",
+    "pinyin": "yuè",
+    "eng": "month"
+  },
+  {
+    "hanzi": "再见",
+    "pinyin": "zàijiàn",
+    "eng": "goodbye"
+  },
+  {
+    "hanzi": "在",
+    "pinyin": "zài",
+    "eng": "at; in; on; in the process of"
+  },
+  {
+    "hanzi": "怎么",
+    "pinyin": "zěnme",
+    "eng": "how"
+  },
+  {
+    "hanzi": "怎么样",
+    "pinyin": "zěnmeyàng",
+    "eng": "how about; how is it"
+  },
+  {
+    "hanzi": "这",
+    "pinyin": "zhè",
+    "eng": "this"
+  },
+  {
+    "hanzi": "这儿",
+    "pinyin": "zhèr",
+    "eng": "here"
+  },
+  {
+    "hanzi": "中国",
+    "pinyin": "Zhōngguó",
+    "eng": "China"
+  },
+  {
+    "hanzi": "中午",
+    "pinyin": "zhōngwǔ",
+    "eng": "noon"
+  },
+  {
+    "hanzi": "住",
+    "pinyin": "zhù",
+    "eng": "live; reside"
+  },
+  {
+    "hanzi": "桌子",
+    "pinyin": "zhuōzi",
+    "eng": "table; desk"
+  },
+  {
+    "hanzi": "字",
+    "pinyin": "zì",
+    "eng": "character; written word"
+  },
+  {
+    "hanzi": "昨天",
+    "pinyin": "zuótiān",
+    "eng": "yesterday"
+  },
+  {
+    "hanzi": "坐",
+    "pinyin": "zuò",
+    "eng": "sit; travel by (vehicle)"
+  },
+  {
+    "hanzi": "做",
+    "pinyin": "zuò",
+    "eng": "do; make"
+  }
+] },
+  hsk2: { label: "HSK2", cards: [
+  {
+    "hanzi": "吧",
+    "pinyin": "ba",
+    "eng": "(modal particle indicating polite suggestion); ...right?; ...OK?"
+  },
+  {
+    "hanzi": "白",
+    "pinyin": "bái",
+    "eng": "white; snowy; pure; bright; empty; blank; plain; clear; to make clear; in vain; gratuitous; free of charge; reactionary; anti-communist; funeral; to stare coldly; to write wrong character; to state; to explain; vernacular; spoken lines in opera; surname Bai"
+  },
+  {
+    "hanzi": "百",
+    "pinyin": "bǎi",
+    "eng": "hundred; numerous; all kinds of; surname Bai"
+  },
+  {
+    "hanzi": "帮助",
+    "pinyin": "bāng zhù",
+    "eng": "assistance; aid; to help; to assist"
+  },
+  {
+    "hanzi": "报纸",
+    "pinyin": "bào zhǐ",
+    "eng": "newspaper; newsprint; CL:份[fen4],期[qi1],張|张[zhang1]"
+  },
+  {
+    "hanzi": "比",
+    "pinyin": "bǐ",
+    "eng": "(particle used for comparison and \"-er than\"); to compare; to contrast; to gesture (with hands); ratio"
+  },
+  {
+    "hanzi": "别",
+    "pinyin": "bié",
+    "eng": "to leave; to depart; to separate; to distinguish; to classify; other; another; do not; must not; to pin"
+  },
+  {
+    "hanzi": "长",
+    "pinyin": "cháng",
+    "eng": "length; long; forever; always; constantly"
+  },
+  {
+    "hanzi": "唱歌",
+    "pinyin": "chàng gē",
+    "eng": "to sing a song"
+  },
+  {
+    "hanzi": "出",
+    "pinyin": "chū",
+    "eng": "to go out; to come out; to occur; to produce; to go beyond; to rise; to put forth; to happen; classifier for dramas, plays, operas etc"
+  },
+  {
+    "hanzi": "穿",
+    "pinyin": "chuān",
+    "eng": "to bore through; pierce; perforate; penetrate; pass through; to dress; to wear; to put on; to thread"
+  },
+  {
+    "hanzi": "船",
+    "pinyin": "chuán",
+    "eng": "a boat; vessel; ship; CL:條|条[tiao2],艘[sou1],隻|只[zhi1]"
+  },
+  {
+    "hanzi": "次",
+    "pinyin": "cì",
+    "eng": "next in sequence; second; the second (day, time etc); secondary; vice-; sub-; infra-; inferior quality; substandard; order; sequence; hypo- (chemistry); classifier for enumerated events: time"
+  },
+  {
+    "hanzi": "从",
+    "pinyin": "cóng",
+    "eng": "from; via; passing through; through (a gap); past; ever (followed by negative, meaning never); (formerly pr. zong4 and related to 縱|纵) to follow; to comply with; to obey; to join; to engage in; adopting some mode of action or attitude; follower; retainer; accessory; accomplice; related by common paternal grandfather or earlier ancestor; surname Cong"
+  },
+  {
+    "hanzi": "错",
+    "pinyin": "cuò",
+    "eng": "mistake; error; blunder; fault; cross; uneven; wrong; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "打篮球",
+    "pinyin": "dǎ lán qiú",
+    "eng": "play basketball"
+  },
+  {
+    "hanzi": "大家",
+    "pinyin": "dà jiā",
+    "eng": "authority; everyone"
+  },
+  {
+    "hanzi": "但是",
+    "pinyin": "dàn shì",
+    "eng": "but; however"
+  },
+  {
+    "hanzi": "到",
+    "pinyin": "dào",
+    "eng": "to (a place); until (a time); up to; to go; to arrive"
+  },
+  {
+    "hanzi": "得",
+    "pinyin": "de",
+    "eng": "structural particle: used after a verb (or adjective as main verb), linking it to following phrase indicating effect, degree, possibility etc"
+  },
+  {
+    "hanzi": "等",
+    "pinyin": "děng",
+    "eng": "class; rank; grade; equal to; same as; to wait for; to await; et cetera; and so on; et al. (and other authors); after; as soon as; once"
+  },
+  {
+    "hanzi": "弟弟",
+    "pinyin": "dì di",
+    "eng": "younger brother; CL:個|个[ge4],位[wei4]"
+  },
+  {
+    "hanzi": "第一",
+    "pinyin": "dì yī",
+    "eng": "first; number one"
+  },
+  {
+    "hanzi": "懂",
+    "pinyin": "dǒng",
+    "eng": "to understand; to know"
+  },
+  {
+    "hanzi": "对",
+    "pinyin": "duì",
+    "eng": "couple; pair; to be opposite; to oppose; to face; versus; for; to; correct (answer); to answer; to reply; to direct (towards sth); right"
+  },
+  {
+    "hanzi": "饭馆",
+    "pinyin": "fàn guǎn",
+    "eng": "restaurant; CL:家[jia1]"
+  },
+  {
+    "hanzi": "房间",
+    "pinyin": "fáng jiān",
+    "eng": "room; CL:間|间[jian1]"
+  },
+  {
+    "hanzi": "非常",
+    "pinyin": "fēi cháng",
+    "eng": "unusual; extraordinary; extreme; very; exceptional"
+  },
+  {
+    "hanzi": "服务员",
+    "pinyin": "fú wù yuán",
+    "eng": "waiter; waitress; attendant; customer service personnel; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "高",
+    "pinyin": "gāo",
+    "eng": "high; tall; above average; loud; your (honorific); surname Gao"
+  },
+  {
+    "hanzi": "告诉",
+    "pinyin": "gào su",
+    "eng": "to tell; to inform; to let know"
+  },
+  {
+    "hanzi": "哥哥",
+    "pinyin": "gē ge",
+    "eng": "older brother; CL:個|个[ge4],位[wei4]"
+  },
+  {
+    "hanzi": "给",
+    "pinyin": "gěi",
+    "eng": "to; for; for the benefit of; to give; to allow; to do sth (for sb); (passive particle)"
+  },
+  {
+    "hanzi": "公共汽车",
+    "pinyin": "gōng gòng qì chē",
+    "eng": "bus; CL:輛|辆[liang4],班[ban1]"
+  },
+  {
+    "hanzi": "公斤",
+    "pinyin": "gōng jīn",
+    "eng": "kilogram (kg)"
+  },
+  {
+    "hanzi": "公司",
+    "pinyin": "gōng sī",
+    "eng": "(business) company; company; firm; corporation; incorporated; CL:家[jia1]"
+  },
+  {
+    "hanzi": "狗",
+    "pinyin": "gǒu",
+    "eng": "dog; CL:隻|只[zhi1],條|条[tiao2]"
+  },
+  {
+    "hanzi": "贵",
+    "pinyin": "guì",
+    "eng": "expensive; noble; your (name); precious"
+  },
+  {
+    "hanzi": "过",
+    "pinyin": "guò",
+    "eng": "(experienced action marker); to cross; to go over; to pass (time); to celebrate (a holiday); to live; to get along; excessively; too-; surname Guo"
+  },
+  {
+    "hanzi": "还",
+    "pinyin": "hái",
+    "eng": "still; still in progress; still more; yet; even more; in addition; fairly; passably (good); as early as; even; also; else"
+  },
+  {
+    "hanzi": "孩子",
+    "pinyin": "hái zi",
+    "eng": "child"
+  },
+  {
+    "hanzi": "好吃",
+    "pinyin": "hǎo chī",
+    "eng": "tasty; delicious"
+  },
+  {
+    "hanzi": "黑",
+    "pinyin": "hēi",
+    "eng": "black; dark; abbr. for Heilongjiang 黑龍江|黑龙江 province in northeast China"
+  },
+  {
+    "hanzi": "红",
+    "pinyin": "hóng",
+    "eng": "bonus; popular; red; revolutionary"
+  },
+  {
+    "hanzi": "欢迎",
+    "pinyin": "huān yíng",
+    "eng": "to welcome; welcome"
+  },
+  {
+    "hanzi": "回答",
+    "pinyin": "huí dá",
+    "eng": "to reply; to answer; the answer; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "火车站",
+    "pinyin": "huǒ chē zhàn",
+    "eng": "train station"
+  },
+  {
+    "hanzi": "机场",
+    "pinyin": "jī chǎng",
+    "eng": "airport; airfield; CL:家[jia1],處|处[chu4]"
+  },
+  {
+    "hanzi": "鸡蛋",
+    "pinyin": "jī dàn",
+    "eng": "(chicken) egg; hen's egg; CL:個|个[ge4],打[da2]"
+  },
+  {
+    "hanzi": "件",
+    "pinyin": "jiàn",
+    "eng": "item; component; classifier for events, things, clothes etc"
+  },
+  {
+    "hanzi": "教室",
+    "pinyin": "jiào shì",
+    "eng": "classroom; CL:間|间[jian1]"
+  },
+  {
+    "hanzi": "姐姐",
+    "pinyin": "jiě jie",
+    "eng": "older sister; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "介绍",
+    "pinyin": "jiè shào",
+    "eng": "to present; to introduce; to recommend; to suggest; to let know; to brief"
+  },
+  {
+    "hanzi": "进",
+    "pinyin": "jìn",
+    "eng": "to advance; to enter; to come (or go) into; to receive or admit; to eat or drink; to submit or present; (used after a verb) into, in; to score a goal"
+  },
+  {
+    "hanzi": "近",
+    "pinyin": "jìn",
+    "eng": "near; close to; approximately"
+  },
+  {
+    "hanzi": "就",
+    "pinyin": "jiù",
+    "eng": "at once; right away; only; just (emphasis); as early as; already; as soon as; then; in that case; as many as; even if; to approach; to move towards; to undertake; to engage in; to suffer; subjected to; to accomplish; to take advantage of; to go with (of foods); with regard to; concerning"
+  },
+  {
+    "hanzi": "觉得",
+    "pinyin": "jué de",
+    "eng": "to think; to feel"
+  },
+  {
+    "hanzi": "咖啡",
+    "pinyin": "kā fēi",
+    "eng": "coffee; CL:杯[bei1]"
+  },
+  {
+    "hanzi": "开始",
+    "pinyin": "kāi shǐ",
+    "eng": "to begin; beginning; to start; initial; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "考试",
+    "pinyin": "kǎo shì",
+    "eng": "exam; CL:次[ci4]"
+  },
+  {
+    "hanzi": "可能",
+    "pinyin": "kě néng",
+    "eng": "might (happen); possible; probable; possibility; probability; maybe; perhaps; CL:個| 个[ge4]"
+  },
+  {
+    "hanzi": "可以",
+    "pinyin": "kě yǐ",
+    "eng": "can; may; possible; able to"
+  },
+  {
+    "hanzi": "课",
+    "pinyin": "kè",
+    "eng": "subject; course; class; lesson; CL:堂[tang2],节|節[jie2],門|门[men2]"
+  },
+  {
+    "hanzi": "快",
+    "pinyin": "kuài",
+    "eng": "rapid; quick; speed; rate; soon; almost; to make haste; clever; sharp (of knives or wits); forthright; plain-spoken; gratified; pleased; pleasant"
+  },
+  {
+    "hanzi": "快乐",
+    "pinyin": "kuài lè",
+    "eng": "happy; merry"
+  },
+  {
+    "hanzi": "累",
+    "pinyin": "lèi",
+    "eng": "tired; weary; to strain; to wear out; to work hard"
+  },
+  {
+    "hanzi": "离",
+    "pinyin": "lí",
+    "eng": "to leave; to part from; to be away from; (in giving distances) from; without (sth); independent of; one of the eight trigrams of the Book of Changes representing fire (old)"
+  },
+  {
+    "hanzi": "两",
+    "pinyin": "liǎng",
+    "eng": "both; two; ounce; some; a few; tael; weight equal to 50 grams"
+  },
+  {
+    "hanzi": "路",
+    "pinyin": "lù",
+    "eng": "road; path; way; CL:條|条[tiao2]"
+  },
+  {
+    "hanzi": "旅游",
+    "pinyin": "lǚ yóu",
+    "eng": "trip; journey; tourism; travel; tour"
+  },
+  {
+    "hanzi": "卖",
+    "pinyin": "mài",
+    "eng": "to sell; to betray; to spare no effort; to show off or flaunt"
+  },
+  {
+    "hanzi": "慢",
+    "pinyin": "màn",
+    "eng": "slow"
+  },
+  {
+    "hanzi": "忙",
+    "pinyin": "máng",
+    "eng": "busy; hurriedly"
+  },
+  {
+    "hanzi": "猫",
+    "pinyin": "māo",
+    "eng": "cat; CL:隻|只[zhi1]"
+  },
+  {
+    "hanzi": "没",
+    "pinyin": "méi",
+    "eng": "(negative prefix for verbs); have not; not"
+  },
+  {
+    "hanzi": "每",
+    "pinyin": "měi",
+    "eng": "each; every"
+  },
+  {
+    "hanzi": "妹妹",
+    "pinyin": "mèi mei",
+    "eng": "younger sister; fig. younger woman (esp. girl friend or rival); CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "门",
+    "pinyin": "mén",
+    "eng": "gate; door; CL:扇[shan4]; gateway; doorway; CL:個|个[ge4]; opening; valve; switch; way to do something; knack; family; house; (religious) sect; school (of thought); class; category; phylum or division (taxonomy); classifier for large guns; classifier for lessons, subjects, branches of technology"
+  },
+  {
+    "hanzi": "男人",
+    "pinyin": "nán rén",
+    "eng": "a man; a male; men; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "您",
+    "pinyin": "nín",
+    "eng": "you (polite, as opposed to informal 你[ni3])"
+  },
+  {
+    "hanzi": "牛奶",
+    "pinyin": "niú nǎi",
+    "eng": "cow's milk; CL:瓶[ping2],杯[bei1]"
+  },
+  {
+    "hanzi": "女人",
+    "pinyin": "nǚ rén",
+    "eng": "woman"
+  },
+  {
+    "hanzi": "旁边",
+    "pinyin": "páng biān",
+    "eng": "lateral; side; to the side; beside"
+  },
+  {
+    "hanzi": "跑步",
+    "pinyin": "pǎo bù",
+    "eng": "to walk quickly; to march; to run"
+  },
+  {
+    "hanzi": "便宜",
+    "pinyin": "pián yi",
+    "eng": "small advantages; to let sb off lightly; cheap; inexpensive"
+  },
+  {
+    "hanzi": "票",
+    "pinyin": "piào",
+    "eng": "ticket; ballot; bank note; CL:張|张[zhang1]; person held for ransom; amateur performance of Chinese opera; classifier for shipments and business transactions (topolect)"
+  },
+  {
+    "hanzi": "妻子",
+    "pinyin": "qī zi",
+    "eng": "wife; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "起床",
+    "pinyin": "qǐ chuáng",
+    "eng": "to get up"
+  },
+  {
+    "hanzi": "千",
+    "pinyin": "qiān",
+    "eng": "thousand"
+  },
+  {
+    "hanzi": "晴",
+    "pinyin": "qíng",
+    "eng": "clear; fine (weather)"
+  },
+  {
+    "hanzi": "去年",
+    "pinyin": "qù nián",
+    "eng": "last year"
+  },
+  {
+    "hanzi": "让",
+    "pinyin": "ràng",
+    "eng": "to yield; to permit; to let sb do sth; to have sb do sth"
+  },
+  {
+    "hanzi": "日",
+    "pinyin": "rì",
+    "eng": "sun; day; date, day of the month; abbr. for 日本|日本 Japan"
+  },
+  {
+    "hanzi": "上班",
+    "pinyin": "shàng bān",
+    "eng": "to go to work; to be on duty; to start work; to go to the office"
+  },
+  {
+    "hanzi": "身体",
+    "pinyin": "shēn tǐ",
+    "eng": "(human) body; health; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "生病",
+    "pinyin": "shēng bìng",
+    "eng": "to fall ill; to sicken"
+  },
+  {
+    "hanzi": "生日",
+    "pinyin": "shēng rì",
+    "eng": "birthday; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "时间",
+    "pinyin": "shí jiān",
+    "eng": "time; period; CL:段[duan4]"
+  },
+  {
+    "hanzi": "事情",
+    "pinyin": "shì qíng",
+    "eng": "affair; matter; thing; business; CL:件[jian4],樁|桩[zhuang1]"
+  },
+  {
+    "hanzi": "手表",
+    "pinyin": "shǒu biǎo",
+    "eng": "wrist watch; CL:塊|块[kuai4],隻|只[zhi1],個|个[ge4]"
+  },
+  {
+    "hanzi": "手机",
+    "pinyin": "shǒu jī",
+    "eng": "cell phone; cellular phone; mobile phone; CL:部[bu4]"
+  },
+  {
+    "hanzi": "送",
+    "pinyin": "sòng",
+    "eng": "to deliver; to carry; to give (as a present); to present (with); to see off; to send"
+  },
+  {
+    "hanzi": "所以",
+    "pinyin": "suǒ yǐ",
+    "eng": "therefore; as a result; so"
+  },
+  {
+    "hanzi": "它",
+    "pinyin": "tā",
+    "eng": "it"
+  },
+  {
+    "hanzi": "踢足球",
+    "pinyin": "tī zú qiú",
+    "eng": "play soccer(football)"
+  },
+  {
+    "hanzi": "题",
+    "pinyin": "tí",
+    "eng": "topic; problem for discussion; exam question; subject; to inscribe; to mention; surname Ti; CL:個|个[ge4],道[dao4]"
+  },
+  {
+    "hanzi": "跳舞",
+    "pinyin": "tiào wǔ",
+    "eng": "to dance"
+  },
+  {
+    "hanzi": "外",
+    "pinyin": "wài",
+    "eng": "outside; in addition; foreign; external"
+  },
+  {
+    "hanzi": "完",
+    "pinyin": "wán",
+    "eng": "to finish; to be over; whole; complete; entire"
+  },
+  {
+    "hanzi": "玩",
+    "pinyin": "wán",
+    "eng": "toy; sth used for amusement; curio or antique (Taiwan pr. wan4); to play; to have fun; to trifle with; to keep sth for entertainment"
+  },
+  {
+    "hanzi": "晚上",
+    "pinyin": "wǎn shang",
+    "eng": "in the evening; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "为什么",
+    "pinyin": "wèi shén me",
+    "eng": "why?; for what reason?"
+  },
+  {
+    "hanzi": "问",
+    "pinyin": "wèn",
+    "eng": "to ask"
+  },
+  {
+    "hanzi": "问题",
+    "pinyin": "wèn tí",
+    "eng": "question; problem; issue; topic; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "西瓜",
+    "pinyin": "xī guā",
+    "eng": "watermelon; CL:條|条[tiao2]"
+  },
+  {
+    "hanzi": "希望",
+    "pinyin": "xī wàng",
+    "eng": "to wish for; to desire; hope CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "洗",
+    "pinyin": "xǐ",
+    "eng": "to wash; to bathe"
+  },
+  {
+    "hanzi": "向",
+    "pinyin": "xiàng",
+    "eng": "direction; orientation; to face; to turn toward; to; towards; shortly before; formerly; to side with; to be partial to; all along (previously); surname Xiang"
+  },
+  {
+    "hanzi": "小时",
+    "pinyin": "xiǎo shí",
+    "eng": "hour; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "笑",
+    "pinyin": "xiào",
+    "eng": "laugh; smile; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "新",
+    "pinyin": "xīn",
+    "eng": "new; newly; meso- (chemistry)"
+  },
+  {
+    "hanzi": "姓",
+    "pinyin": "xìng",
+    "eng": "family name; surname; name; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "休息",
+    "pinyin": "xiū xi",
+    "eng": "rest; to rest"
+  },
+  {
+    "hanzi": "雪",
+    "pinyin": "xuě",
+    "eng": "snow; snowfall; CL:場|场[chang2]; to have the appearance of snow; to wipe away, off or out; to clean"
+  },
+  {
+    "hanzi": "颜色",
+    "pinyin": "yán sè",
+    "eng": "color; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "眼睛",
+    "pinyin": "yǎn jing",
+    "eng": "eye; CL:隻|只[zhi1],雙|双[shuang1]"
+  },
+  {
+    "hanzi": "羊肉",
+    "pinyin": "yáng ròu",
+    "eng": "mutton"
+  },
+  {
+    "hanzi": "药",
+    "pinyin": "yào",
+    "eng": "medicine; drug; cure; CL:種|种[zhong3],服[fu4]"
+  },
+  {
+    "hanzi": "要",
+    "pinyin": "yāo",
+    "eng": "demand; ask; request; coerce"
+  },
+  {
+    "hanzi": "也",
+    "pinyin": "yě",
+    "eng": "also; too; (in classical Chinese) final particle serving as copula"
+  },
+  {
+    "hanzi": "已经",
+    "pinyin": "yǐ jīng",
+    "eng": "already"
+  },
+  {
+    "hanzi": "一起",
+    "pinyin": "yì qǐ",
+    "eng": "in the same place; together; with; altogether (in total)"
+  },
+  {
+    "hanzi": "意思",
+    "pinyin": "yì si",
+    "eng": "idea; opinion; meaning; wish; desire; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "阴",
+    "pinyin": "yīn",
+    "eng": "overcast (weather); cloudy; shady; Yin (the negative principle of Yin and Yang); negative (electric.); feminine; moon; implicit; hidden; genitalia"
+  },
+  {
+    "hanzi": "因为",
+    "pinyin": "yīn wèi",
+    "eng": "because; owing to; on account of"
+  },
+  {
+    "hanzi": "游泳",
+    "pinyin": "yóu yǒng",
+    "eng": "swim"
+  },
+  {
+    "hanzi": "右边",
+    "pinyin": "yòu bian",
+    "eng": "right side; right, to the right"
+  },
+  {
+    "hanzi": "鱼",
+    "pinyin": "yú",
+    "eng": "fish; CL:條|条[tiao2],尾[wei3]"
+  },
+  {
+    "hanzi": "元",
+    "pinyin": "yuán",
+    "eng": "Chinese monetary unit; dollar; primary; first; the Yuan or Mongol dynasty (1279-1368); surname Yuan"
+  },
+  {
+    "hanzi": "远",
+    "pinyin": "yuǎn",
+    "eng": "far; distant; remote"
+  },
+  {
+    "hanzi": "运动",
+    "pinyin": "yùn dòng",
+    "eng": "movement; campaign; CL: 場|场[chang3]; sports"
+  },
+  {
+    "hanzi": "再",
+    "pinyin": "zài",
+    "eng": "again; once more; re-; second; another; then (after sth, and not until then)"
+  },
+  {
+    "hanzi": "早上",
+    "pinyin": "zǎo shang",
+    "eng": "early morning; CL:個|个[ge4]; Good morning!"
+  },
+  {
+    "hanzi": "张",
+    "pinyin": "zhāng",
+    "eng": "to open up; to spread; sheet of paper; classifier for flat objects, sheet; classifier for votes"
+  },
+  {
+    "hanzi": "丈夫",
+    "pinyin": "zhàng fu",
+    "eng": "husband; CL:個|个[ge4]"
+  },
+  {
+    "hanzi": "找",
+    "pinyin": "zhǎo",
+    "eng": "to try to find; to look for; to call on sb; to find; to seek; to return; to give change"
+  },
+  {
+    "hanzi": "着",
+    "pinyin": "zhe",
+    "eng": "particle attached after verb to indicate action in progress, like -ing ending"
+  },
+  {
+    "hanzi": "真",
+    "pinyin": "zhēn",
+    "eng": "really; truly; indeed; real; true; genuine"
+  },
+  {
+    "hanzi": "正在",
+    "pinyin": "zhèng zài",
+    "eng": "in the process of (doing something or happening); while (doing)"
+  },
+  {
+    "hanzi": "知道",
+    "pinyin": "zhī dao",
+    "eng": "to know; to be aware of"
+  },
+  {
+    "hanzi": "准备",
+    "pinyin": "zhǔn bèi",
+    "eng": "preparation; prepare"
+  },
+  {
+    "hanzi": "自行车",
+    "pinyin": "zì xíng chē",
+    "eng": "bicycle; bike; CL:輛|辆[liang4]"
+  },
+  {
+    "hanzi": "走",
+    "pinyin": "zǒu",
+    "eng": "to walk; to go; to run; to move (of vehicle); to visit; to leave; to go away; to die (euph.); from; through; away (in compound verbs, such as 撤走); to change (shape, form, meaning)"
+  },
+  {
+    "hanzi": "最",
+    "pinyin": "zuì",
+    "eng": "most; the most; -est"
+  },
+  {
+    "hanzi": "左边",
+    "pinyin": "zuǒ bian",
+    "eng": "left; the left side; to the left of"
+  }
+] }
+};
+
+
+/* ================= STATE ================= */
+let deckId = "hsk1";
+let mode = "all";
+let showPinyin = false;
+let showingBack = false;
+
+let all = [];
+let deck = [];
+let currentIndex = 0;
+
+let rightSet = new Set();
+let wrongSet = new Set();
+
+/* ================= DOM ================= */
+const titleEl = document.getElementById("title");
+const hanziEl = document.getElementById("hanzi");
+const pinyinEl = document.getElementById("pinyin");
+const backEl  = document.getElementById("back");
+const indexEl = document.getElementById("index");
+const statsEl = document.getElementById("stats");
+const cardEl  = document.getElementById("card");
+
+const modeSelect = document.getElementById("modeSelect");
+const deckSelect = document.getElementById("deckSelect");
+const pinyinToggleBtn = document.getElementById("pinyinToggleBtn");
+
+/* ================= STORAGE ================= */
+function key(name) {
+  return `hsk_${deckId}_${name}`;
+}
+function uiKey(name) {
+  return `hsk_ui_${name}`;
+}
+
+function saveState() {
+  localStorage.setItem(key("right"), JSON.stringify([...rightSet]));
+  localStorage.setItem(key("wrong"), JSON.stringify([...wrongSet]));
+  localStorage.setItem(key("mode"), mode);
+  localStorage.setItem(uiKey("showPinyin"), String(showPinyin));
+  localStorage.setItem("hsk_active_deck", deckId);
+}
+
+function loadState() {
+  rightSet = new Set(JSON.parse(localStorage.getItem(key("right")) || "[]"));
+  wrongSet = new Set(JSON.parse(localStorage.getItem(key("wrong")) || "[]"));
+  const m = localStorage.getItem(key("mode"));
+  if (m) mode = m;
+  showPinyin = localStorage.getItem(uiKey("showPinyin")) === "true";
+  modeSelect.value = mode;
+  updatePinyinButton();
+}
+
+/* ================= CORE ================= */
+function initDeck() {
+  all = DECKS[deckId].cards.map((c, i) => ({ ...c, id: i }));
+}
+
+function buildDeck() {
+  if (mode === "correct") deck = all.filter(c => rightSet.has(c.id));
+  else if (mode === "incorrect") deck = all.filter(c => wrongSet.has(c.id));
+  else deck = all.slice();
+
+  if (deck.length === 0) {
+    deck = [{ id: -1, hanzi: "—", pinyin: "", eng: "No cards in this pile yet." }];
+  }
+
+  currentIndex = 0;
+  showingBack = false;
+  render();
+  saveState();
+}
+
+function render() {
+  const c = deck[currentIndex];
+  hanziEl.textContent = c.hanzi;
+
+  if (showPinyin && c.pinyin) {
+    pinyinEl.textContent = c.pinyin;
+    pinyinEl.style.display = "block";
+  } else {
+    pinyinEl.style.display = "none";
+  }
+
+  backEl.textContent = c.eng || "";
+  backEl.style.display = showingBack ? "block" : "none";
+
+  statsEl.textContent = `Right: ${rightSet.size} · Wrong: ${wrongSet.size} · Total: ${all.length}`;
+  indexEl.textContent = `${currentIndex + 1} / ${deck.length}`;
+  titleEl.textContent = `HSK Flashcards — ${DECKS[deckId].label}`;
+}
+
+/* ================= ACTIONS ================= */
+function next() {
+  currentIndex = (currentIndex + 1) % deck.length;
+  showingBack = false;
+  render();
+}
+function prev() {
+  currentIndex = (currentIndex - 1 + deck.length) % deck.length;
+  showingBack = false;
+  render();
+}
+function flip() {
+  showingBack = !showingBack;
+  render();
+}
+function shuffle() {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  currentIndex = 0;
+  render();
+}
+function markRight() {
+  const c = deck[currentIndex];
+  if (c.id >= 0) {
+    rightSet.add(c.id);
+    wrongSet.delete(c.id);
+  }
+  next();
+}
+function markWrong() {
+  const c = deck[currentIndex];
+  if (c.id >= 0) {
+    wrongSet.add(c.id);
+    rightSet.delete(c.id);
+  }
+  next();
+}
+function togglePinyin() {
+  showPinyin = !showPinyin;
+  updatePinyinButton();
+  render();
+}
+function updatePinyinButton() {
+  pinyinToggleBtn.textContent = showPinyin ? "Hide Pinyin" : "Show Pinyin";
+}
+function resetDeck() {
+  rightSet.clear();
+  wrongSet.clear();
+  mode = "all";
+  modeSelect.value = mode;
+  buildDeck();
+}
+
+/* ================= EVENTS ================= */
+document.getElementById("nextBtn").onclick = next;
+document.getElementById("prevBtn").onclick = prev;
+document.getElementById("flipBtn").onclick = flip;
+document.getElementById("shuffleBtn").onclick = shuffle;
+document.getElementById("rightBtn").onclick = markRight;
+document.getElementById("wrongBtn").onclick = markWrong;
+document.getElementById("resetBtn").onclick = resetDeck;
+document.getElementById("pinyinToggleBtn").onclick = togglePinyin;
+cardEl.onclick = flip;
+
+modeSelect.onchange = e => {
+  mode = e.target.value;
+  buildDeck();
+};
+
+deckSelect.onchange = e => {
+  deckId = e.target.value;
+  initDeck();
+  loadState();
+  buildDeck();
+};
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") next();
+  else if (e.key === "ArrowLeft") prev();
+  else if (e.key === " ") { e.preventDefault(); flip(); }
+  else if (e.key.toLowerCase() === "r") markRight();
+  else if (e.key.toLowerCase() === "w") markWrong();
+  else if (e.key.toLowerCase() === "p") togglePinyin();
+});
+
+/* ================= INIT ================= */
+const storedDeck = localStorage.getItem("hsk_active_deck");
+if (storedDeck && DECKS[storedDeck]) deckId = storedDeck;
+
+initDeck();
+loadState();
+buildDeck();
+</script>
+</body>
+</html>
